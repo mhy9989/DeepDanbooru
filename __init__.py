@@ -2,8 +2,23 @@ from io import BytesIO
 import base64
 import random
 from PIL import Image
-from hoshino import aiorequests
+from hoshino import aiorequests,Service,priv
 import re
+
+sv_help = '''
+- [鉴赏图片|鉴赏|aijp + 图片] 鉴赏图片tags
+- [回复别人图片 + “鉴赏图片|鉴赏|aijp”] 对别人发图片进行鉴赏
+'''.strip()
+
+sv = Service(
+    name = '鉴赏图片',  #功能名
+    use_priv = priv.NORMAL, #使用权限   
+    manage_priv = priv.ADMIN, #管理权限
+    visible = True, #False隐藏
+    enable_on_default = True, #是否默认启用
+    bundle = '娱乐', #属于哪一类
+    help_ = sv_help #帮助文本
+    )
 
 class Error(Exception):
     def __init__(self, args: object) -> None:
