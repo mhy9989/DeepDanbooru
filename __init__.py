@@ -6,7 +6,7 @@ from hoshino import aiorequests,Service,priv
 import re
 
 sv_help = '''
-- [鉴赏图片|鉴赏|aijp + 图片] 鉴赏图片tags
+- [鉴赏图片|鉴赏|aijp + 图片] 鉴赏图片获得对应tags
 - [回复别人图片 + “鉴赏图片|鉴赏|aijp”] 对别人发图片进行鉴赏
 '''.strip()
 
@@ -80,7 +80,7 @@ async def get_tags(image):
         else:
             raise Error('tags请求错误')
 
-@sv.on_keyword(('鉴赏图片','aijp'))
+@sv.on_keyword(('鉴赏图片','鉴赏','aijp'))
 async def generate_tags(bot, ev):
     image = await get_image(bot, ev)
     if not image:
