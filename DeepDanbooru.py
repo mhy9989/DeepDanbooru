@@ -20,6 +20,8 @@ sv = Service(
     help_ = sv_help #帮助文本
     )
 
+if_shape = True
+
 class Error(Exception):
     def __init__(self, args: object) -> None:
         self.error = args
@@ -60,6 +62,17 @@ async def get_image(bot, ev):
     image = Image.open(resp)
     return image
 
+async def get_shape(image: Image) -> str:
+    width, height = image.size
+    if (width > height):
+        shape = "Landscape"
+    elif (width == height):
+        shape = "Square"
+    else:
+        shape = "Portrait"
+    return "&shape=" + shape
+
+
 async def get_tags(image):
     url_push = 'https://hf.space/embed/hysts/DeepDanbooru/api/queue/push/'
     params = {
@@ -83,6 +96,7 @@ async def get_tags(image):
 @sv.on_keyword(('鉴赏图片','鉴赏','aijp'))
 async def generate_tags(bot, ev):
     image = await get_image(bot, ev)
+    shape = await get_shape(image)
     if not image:
         await bot.finish(ev, '未检测到可用图片', at_sender=True)
     await bot.send(ev,"少女鉴赏中...")
@@ -93,6 +107,8 @@ async def generate_tags(bot, ev):
             if i["label"] != "rating:safe":
                 taglist.append(i["label"])
         msg =  f"鉴赏的tags：\n" + ','.join(taglist)
+        if if_shape:
+            msg += shape
         await bot.send(ev, msg, at_sender=True)
     else:
         await bot.send(ev, '生成失败', at_sender=True)
