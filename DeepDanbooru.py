@@ -3,7 +3,7 @@ import base64
 import random
 from PIL import Image
 from hoshino import aiorequests,Service,priv
-import re
+import re,json,websockets
 
 sv_help = '''
 - [鉴赏图片|鉴赏|aijp + 图片] 鉴赏图片获得对应tags
@@ -74,24 +74,46 @@ async def get_shape(image: Image) -> str:
 
 
 async def get_tags(image):
-    url_push = 'https://hf.space/embed/hysts/DeepDanbooru/api/queue/push/'
-    params = {
-        "fn_index": 0,
-        "data": [],
-        "session_hash": randomhash(11),
-        "action": "predict"
+    HFAPI = 'wss://spaces.huggingface.tech/hysts/DeepDanbooru/queue/join'
+    hash = randomhash(10)
+    send_hash = {
+        'fn_index': 0,
+        'session_hash': hash
     }
-    params['data'] = ['data:image/png;base64,' + pic2b64(image), 0.5]
-    hash = (await (await aiorequests.post(url_push, json=params)).json())['hash']
-    url_status = 'https://hf.space/embed/hysts/DeepDanbooru/api/queue/status/'
-    while True:
-        data = await (await aiorequests.post(url_status, json={'hash': hash})).json()
-        if data['status'] == 'PENDING':
-            continue
-        elif data['status'] == 'COMPLETE':
-            return data['data']['data'][0]['confidences']
+    img_data = {
+        'fn_index': 0,
+        'session_hash': hash,
+        'data': ['data:image/png;base64,' + pic2b64(image), 0.5]
+    }
+    async with websockets.connect(HFAPI) as ws:
+        data = json.loads(await ws.recv())
+        if data['msg'] == 'send_hash':
+            await ws.send(json.dumps(send_hash))
         else:
-            raise Error('tags请求错误')
+            print(data['msg'])
+            raise Error('HFAPI请求错误')  
+        while True:
+            if ws.closed:
+                return
+            data = json.loads(await ws.recv())
+            if data['msg'] == 'estimation':
+                continue
+            elif data['msg'] == 'send_data':
+                await ws.send(json.dumps(img_data))
+                while True:
+                    data = json.loads(await ws.recv())
+                    if data['msg'] == 'process_starts':
+                        continue
+                    elif data['msg'] == 'process_completed':
+                        tags =  data['output']['data'][0]["confidences"]
+                        return tags
+                    else:
+                        print(data['msg'])
+                        raise Error('HFAPI请求错误')
+            else:
+                print(data['msg'])
+                raise Error('HFAPI请求错误')  
+
 
 @sv.on_keyword(('鉴赏图片','鉴赏','aijp'))
 async def generate_tags(bot, ev):
