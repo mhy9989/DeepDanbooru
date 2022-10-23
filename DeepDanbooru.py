@@ -90,7 +90,6 @@ async def get_tags(image):
         if data['msg'] == 'send_hash':
             await ws.send(json.dumps(send_hash))
         else:
-            print(data['msg'])
             raise Error('HFAPI请求错误')  
         while True:
             if ws.closed:
@@ -108,10 +107,8 @@ async def get_tags(image):
                         tags =  data['output']['data'][0]["confidences"]
                         return tags
                     else:
-                        print(data['msg'])
                         raise Error('HFAPI请求错误')
             else:
-                print(data['msg'])
                 raise Error('HFAPI请求错误')  
 
 
